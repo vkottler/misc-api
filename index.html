@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>Urban League API</title>
+	</head>
+	<body>
+	<script>
+
+		function build_csv_string(event) {
+			var csv_contents = "";
+			csv_contents += '"' + event.name + '",';
+			csv_contents += (event.place) ? '"' + event.place.name + '",' : ",";
+			csv_contents += '"' + event.description.replace(/"/g, "") + '",';
+			csv_contents += '"' + event.start_time.substring(0, 10) + '",';
+			csv_contents += '"' + event.start_time.substring(11, 19) + '",';
+			csv_contents += '"' + event.end_time.substring(0, 10) + '",';
+			csv_contents += '"' + event.end_time.substring(11, 19) + '",';
+			csv_contents += '"https://www.facebook.com/events/' + event.id + '/"<br>';
+			return csv_contents;
+		}
+
+		function build_formatted_string(event) {
+			var url = "https://www.facebook.com/events/" + event.id + "/";
+			var csv_contents = "<h3>" + event.name + "</h3>";
+			csv_contents += "<p>" + event.description + "</p>";
+			csv_contents += "<b>Location:</b> " + ((event.place) ? event.place.name + "<br>" : "N/A<br>");
+			csv_contents += "<b>Starts: </b> " + event.start_time.substring(0, 10) + ' | ';
+			csv_contents += "<b>Ends: </b> " + event.end_time.substring(0, 10) + "<br>";
+			csv_contents += "From " + event.start_time.substring(11, 19) + " to " + event.end_time.substring(11, 19) + "<br>";
+			csv_contents += "URL: <a href='" + url +"'>" + url + "</a><br>";
+			return csv_contents;
+		}
+
+		window.fbAsyncInit = function() {
+			FB.init({ appId: '492322644224727', xfbml: true, version: 'v2.8' });
+			FB.AppEvents.logPageView();
+
+			FB.api("/urbanleagueofgreatermadison/events",
+				{ access_token: "492322644224727|2337b7aec63cd1838c26221b383f4a62" },
+				function (response) {
+					var upcoming_events = [];
+					var past_events = [];
+					var formatted_upcoming_events = [];
+					var formatted_past_events = [];
+					console.log(response);
+					if (response && !response.error) {
+						document.getElementById('results').innerHTML = "Success! Loaded " + response.data.length + " events from Facebook.";
+
+						// Categorize and Parse Events
+						for (var i = 0; i < response.data.length; i++) {
+							var csv_contents = build_csv_string(response.data[i]);
+							var formatted_contents = build_formatted_string(response.data[i]);
+							var curr_date = new Date();
+							var event_date = new Date(response.data[i].start_time);
+							if (curr_date.getTime() > event_date.getTime()) {
+								past_events.push(csv_contents);
+								formatted_past_events.push(formatted_contents);
+							}
+							else {
+								upcoming_events.push(csv_contents);
+								formatted_upcoming_events.push(formatted_contents);
+							}
+						}
+
+						// Render Upcoming Events
+						var csv_contents = "Upcoming Events: " + upcoming_events.length;
+						document.getElementById('upcoming_title').innerHTML = csv_contents;
+						csv_contents = "EVENT NAME,VENUE NAME,EVENT DESCRIPTION,START DATE,START TIME,END DATE,END TIME,EVENT WEBSITE<br>";
+						for (var i = 0; i < upcoming_events.length; i++) csv_contents += upcoming_events[i];
+						document.getElementById('upcoming').innerHTML = csv_contents;
+
+						// Render Formatted Upcoming Events
+						csv_contents = "";
+						for (var i = 0; i < formatted_upcoming_events.length; i++) csv_contents += formatted_upcoming_events[i];
+						document.getElementById('upcoming_formatted').innerHTML = csv_contents;
+
+						// Render Past Events
+						csv_contents = "Past Events: " + past_events.length;
+						document.getElementById('past_title').innerHTML = csv_contents;
+						csv_contents = "EVENT NAME,VENUE NAME,EVENT DESCRIPTION,START DATE,START TIME,END DATE,END TIME<br>";
+						for (var i = 0; i < past_events.length; i++) csv_contents += upcoming_events[i];
+						document.getElementById('past').innerHTML = csv_contents;
+
+						// Render Formatted Past Events
+						csv_contents = "";
+						for (var i = 0; i < formatted_past_events.length; i++) csv_contents += formatted_past_events[i];
+						document.getElementById('past_formatted').innerHTML = csv_contents;
+					}
+					else document.getElementById('results').innerHTML = "Failed";
+				}
+			);
+		};
+
+		(function(d, s, id){
+			 var js, fjs = d.getElementsByTagName(s)[0];
+			 if (d.getElementById(id)) {return;}
+			 js = d.createElement(s); js.id = id;
+			 js.src = "//connect.facebook.net/en_US/sdk.js";
+			 fjs.parentNode.insertBefore(js, fjs);
+		}(document, 'script', 'facebook-jssdk'));
+	</script>
+
+	<div id="results">Loading . . .</div>
+	<hr>
+	<h1 id="upcoming_title"></h1>
+	<div id="upcoming_formatted"></div>
+	<hr>
+	<h2>Upcoming in CSV</h2>
+	<div id="upcoming"></div>
+	<hr>
+	<h1 id="past_title"></h1>
+	<div id="past_formatted"></div>
+	<hr>
+	<h2>Past in CSV</h2>
+	<div id="past"></div>
+	<hr>
+
+	</body>
+</html>
+
